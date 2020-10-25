@@ -1,5 +1,6 @@
-# get-allvdirs
-Script for listing all virtual directories of Exchange servers in organization
+# When Microsoft announced decomissioning of TechNet Gallery, I Put here my scripts, published earier there
+
+1. *get-allvdirs.ps1* Script for listing all virtual directories of Exchange servers in organization
 
 ##Credits
 
