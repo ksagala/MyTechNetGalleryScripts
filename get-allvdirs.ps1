@@ -28,7 +28,7 @@
 
     .EXAMPLE
     Get configuration fr whole Exchange organization
-    .\get-Exdocs.ps1
+    .\get-allvdirs.ps1
 
 #>
 $ErrorActionPreference="SilentlyContinue"
