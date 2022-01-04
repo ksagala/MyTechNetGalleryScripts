@@ -121,6 +121,7 @@ elseif ($minver -eq 15)
 	RunGetCommand "Get-MobileDevice" ""
 	RunGetCommand "Get-MalwareFilterPolicy" ""
 	RunGetCommand "Get-MalwareFilteringServer" ""
+	RunGetCommand "Get-SettingOverride" ""
 }
 RunGetCommand "Get-AddressList" ""
 # RunGetCommand "Get-AddressRewriteEntry" "" # Only when using rewriting
