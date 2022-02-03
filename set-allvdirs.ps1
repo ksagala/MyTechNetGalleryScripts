@@ -10,16 +10,16 @@
     THIS CODE IS MADE AVAILABLE AS IS, WITHOUT WARRANTY OF ANY KIND. THE ENTIRE 
     RISK OF THE USE OR THE RESULTS FROM THE USE OF THIS CODE REMAINS WITH THE USER.
 	
-    Version 1.2
+    Version 1.3
 	History:
 	Version 1.0
 		Initial version (June 2010)
 	Version 1.1
-        added powershell virtual directory differentiation between http and https
-        verified with Exchange 2016
-        fixed bugs with Outlook Anywhere 
+        	Added powershell virtual directory differentiation between http and https. Verified with Exchange 2016. Fixed bugs with Outlook Anywhere 
 	Version 1.2
-        Script was updated with corrected build numbers to work in native Exchange 2016 environment and change MAPI vdirs
+        	Script was updated with corrected build numbers to work in native Exchange 2016 environment and change MAPI vdirs
+	Version 1.3
+		Added few comments and verification with Exchange 2019
 
     .DESCRIPTION
 	
@@ -364,7 +364,7 @@ if ($isglobal -eq "Y")
 else
 {
 
-	$value = Get-ECPVirtualDirectory -server $localserver
+    $value = Get-ECPVirtualDirectory -server $localserver
 	
     Write-host "Current Internal Value: " $value.internalURL 
     Write-host "New Internal Value:     " $ECPUrl 
@@ -643,67 +643,67 @@ if ($ExOrgCfg.AdminDisplayVersion.ExchangeBuild.Major -eq 15)
 		[array]$OACurrent = Get-OutlookAnywhere 
 		foreach ($value in $OACurrent)
 		{ 
-		    Write-host "Looking at Server: " $value.server 
-    		Write-host "Current Internal Value: " $value.InternalHostname 
-    		Write-host "New Internal Value:     " $base 
-		    [string]$set = Read-host $ConfirmPrompt 
-    		write-host "" 
+			Write-host "Looking at Server: " $value.server 
+    			Write-host "Current Internal Value: " $value.InternalHostname 
+    			Write-host "New Internal Value:     " $base 
+			[string]$set = Read-host $ConfirmPrompt 
+    			write-host "" 
 
-    		if ($set -eq "Y")
+    			if ($set -eq "Y")
 			{ 
-		        Set-OutlookAnywhere -id $value.identity -InternalHostname $base -InternalClientsRequireSsl $true
+		        	Set-OutlookAnywhere -id $value.identity -InternalHostname $base -InternalClientsRequireSsl $true -InternalClientAuthenticationMethod Negotiate
 			}
 			else
 			{ 
-		        write-host "Outlook Anywhere internal hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground
-    		} 
+		        	write-host "Outlook Anywhere internal hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground
+    			}
 
-		    Write-host "Looking at Server: " $value.server 
-    		Write-host "Current External Value: " $value.externalhostname 
-    		Write-host "New External Value:     " $base 
-    		[string]$set = Read-host $ConfirmPrompt 
+			Write-host "Looking at Server: " $value.server 
+    			Write-host "Current External Value: " $value.externalhostname 
+    			Write-host "New External Value:     " $base 
+    			[string]$set = Read-host $ConfirmPrompt 
 	   		write-host "" 
 
-    		if ($set -eq "Y")
+    			if ($set -eq "Y")
 			{ 
-       			Set-OutlookAnywhere -id $value.identity -ExternalHostname $base -ExternalClientsRequireSsl $true -ExternalClientAuthenticationMethod Negotiate  -IISAuthenticationMethods @('Ntlm', 'Basic', 'Negotiate')
+       				Set-OutlookAnywhere -id $value.identity -ExternalHostname $base -ExternalClientsRequireSsl $true -ExternalClientAuthenticationMethod Negotiate  -IISAuthenticationMethods @('Ntlm', 'Basic', 'Negotiate')
 			}
 			else
 			{ 
-       			write-host "Outlook Anywhere external hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-		    } 
+       				write-host "Outlook Anywhere external hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+		    	}
 		}
 	}
 	else
 	{
 		$value = Get-OutlookAnywhere -server $localserver
 		Write-host "Current Internal Value: " $value.internalhostname 
-    	Write-host "New Internal Value:     " $base
+    		Write-host "New Internal Value:     " $base
 	   	[string]$set = Read-host $ConfirmPrompt 
-    	write-host "" 
+    		write-host "" 
 
-    	if ($set -eq "Y")
+    		if ($set -eq "Y")
 		{ 
-	        Set-OutlookAnywhere -identity $value.identity -InternalHostname $base -InternalClientsRequireSsl $true
+	        	Set-OutlookAnywhere -identity $value.identity -InternalHostname $base -InternalClientsRequireSsl $true -InternalClientAuthenticationMethod Negotiate
 		}
 		else
 		{ 
-	    	write-host "Outlook Anywhere internal hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-    	} 
+	    		write-host "Outlook Anywhere internal hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+    		} 
 
-    	Write-host "Current External Value: " $value.externalhostname 
-    	Write-host "New External Value:     " $base
-    	[string]$set = Read-host $ConfirmPrompt 
-    	write-host "" 
+	    	Write-host "Current External Value: " $value.externalhostname 
+    		Write-host "New External Value:     " $base
+	    	[string]$set = Read-host $ConfirmPrompt 
+    		write-host "" 
 
-    	if ($set -eq "Y")
+	    	if ($set -eq "Y")
 		{ 
-     		Set-OutlookAnywhere -identity $value.identity -ExternalHostname $base -ExternalClientsRequireSsl $true -ExternalClientAuthenticationMethod Negotiate -IISAuthenticationMethods @('Ntlm', 'Basic', 'Negotiate')
-    	}
+     			Set-OutlookAnywhere -identity $value.identity -ExternalHostname $base -ExternalClientsRequireSsl $true -ExternalClientAuthenticationMethod Negotiate -IISAuthenticationMethods @('Ntlm', 'Basic', 'Negotiate')
+    		}
 		else
 		{ 
-       		write-host "Outlook Anywhere external hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-    	} 
+       			write-host "Outlook Anywhere external hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+	    	} 
 	}
 }
 
@@ -737,17 +737,20 @@ if ($SCPset -eq "Y")    {
         Write-host "New SCP Value:     " $SCPURL 
         [string]$set = Read-host $ConfirmPrompt 
         write-host "" 
-        if ($set -eq "Y")    { 
-			if (($ExOrgCfg.AdminDisplayVersion.ExchangeBuild.Major -eq 15)-and ($ExOrgCfg.AdminDisplayVersion.ExchangeBuild.Minor -eq 1))
-			{
-            Set-ClientAccessService -id $value.identity -AutoDiscoverServiceInternalUri $SCPURL 
-			}
+        if ($set -eq "Y")
+	{ 
+		if (($ExOrgCfg.AdminDisplayVersion.ExchangeBuild.Major -eq 15)-and ($ExOrgCfg.AdminDisplayVersion.ExchangeBuild.Minor -eq 1))
+		{
+			Set-ClientAccessService -id $value.identity -AutoDiscoverServiceInternalUri $SCPURL 
+		}
 		else
-			{
-            Set-ClientAccessServer -id $value.identity -AutoDiscoverServiceInternalUri $SCPURL 
-			}
-        }    else { 
-            write-host "Autodiscover Service Connection Point internal value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+		{
+			Set-ClientAccessServer -id $value.identity -AutoDiscoverServiceInternalUri $SCPURL 
+		}
+        }
+	else
+	{ 
+		write-host "Autodiscover Service Connection Point internal value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
         } 
     } 
 } 
