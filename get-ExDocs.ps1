@@ -162,6 +162,10 @@ if ($maxver -lt 15)
 	RunGetCommand "Get-PublicFolder" " -Recurse"
 	RunGetCommandPipeline "Get-PublicFolderDatabase" "Get-MailboxServer" ""
 }
+else
+{
+	RunGetCommand "Get-TransportService" ""
+}
 RunGetCommand "Get-MailboxServer" ""
 RunGetCommand "Get-MessageClassification" ""
 RunGetCommand "Get-OfflineAddressBook" ""
