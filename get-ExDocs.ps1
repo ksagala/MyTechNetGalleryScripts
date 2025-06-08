@@ -6,7 +6,7 @@
     THIS CODE IS MADE AVAILABLE AS IS, WITHOUT WARRANTY OF ANY KIND. THE ENTIRE 
     RISK OF THE USE OR THE RESULTS FROM THE USE OF THIS CODE REMAINS WITH THE USER.
 	
-    Version 1.2
+    Version 1.3
 	History:
 	Version 1.0
 		Initial version
@@ -16,6 +16,8 @@
 		Tested with Exchange 2007, 2010, 2013
 	Version 1.2
 		verified with Exchange 2016 servers, refreshed comments
+	Version 1.3
+		verified with Exchange 2019 servers, refreshed comments
 
     .DESCRIPTION
 	
