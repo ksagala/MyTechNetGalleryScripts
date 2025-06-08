@@ -98,7 +98,7 @@ $filename = $OutputDir+$DateString+"Get-ExchangeCertificate.txt"
 foreach ($server in $ExchangeServers)
 {
     if ($server.AdminDisplayVersion.Major -ge 8)
-        { Get-ExchangeCertificate -Server $server.Name | fl >> $filename }
+        { Get-ExchangeCertificate -Server $server.Name | Format-List >> $filename }
 }
 #
 # Now we are executing get-* cmdlets for all components with functions defined in the beginning of the script
@@ -115,7 +115,7 @@ elseif ($minver -eq 15)
 	# For Exchange 2013 and higher, first verifying if public folder mailbox exist
 	$pubfoldermbx = $null
 	$pubfoldermbx = Get-Mailbox -PublicFolder
-	if ($pubfoldermbx -ne $null)
+	if ($null -ne $pubfoldermbx)
 		{RunGetCommand "Get-MailPublicFolder" ""}
 	RunGetCommand "Get-MobileDeviceMailboxPolicy" ""
 	RunGetCommand "Get-MobileDevice" ""
