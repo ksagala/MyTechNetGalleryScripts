@@ -10,7 +10,7 @@
     THIS CODE IS MADE AVAILABLE AS IS, WITHOUT WARRANTY OF ANY KIND. THE ENTIRE 
     RISK OF THE USE OR THE RESULTS FROM THE USE OF THIS CODE REMAINS WITH THE USER.
 	
-    Version 1.3
+    Version 1.4
 	History:
 	Version 1.0
 		Initial version (June 2010)
@@ -20,13 +20,15 @@
         	Script was updated with corrected build numbers to work in native Exchange 2016 environment and change MAPI vdirs
 	Version 1.3
 		Added few comments and verification with Exchange 2019
+    Version 1.4
+        Added support for Exchange SE and fix problem with MAPI vdirs
 
     .DESCRIPTION
 	
 	Script to allow you to set all virtual directories to a common name like mail.company.com
 
     .EXAMPLE
-    Get configuration fr whole Exchange organization
+    Set configuration fr whole Exchange organization
     .\set-allvdirs.ps1
 
 #>
@@ -48,25 +50,115 @@ $ExOrgCfg = Get-OrganizationConfig
 [string]$NoChangeForeground = "white" 
 [string]$NoChangeBackground = "red" 
 
-Write-host "This will allow you to set the virtual directories associated with setting up a single SSL certificate to work with Exchange 2016, 2013 or 2010." 
+Write-host "This will allow you to set the virtual directories associated with setting up a single SSL certificate to work with Exchange SE, 2019 or older." 
 Write-host "" 
 [string]$base = Read-host "FQDN of Exchange Servers assigned for virtual directories (e.g. mail.company.com)" 
 write-host "" 
 
+# =================================================================================
+# Validate if powershell virtual directory is published with HTTP or HTTPS protocol
+# ================================================================================= 
+[string]$set = Read-host "Do you want to use HTTP for Powershell? (Y/N)" 
+Write-host "" 
+
+if ($set -eq "Y")
+{ 
+    [string]$PSprefix = "http://" 
+}
+else
+{ 
+    [string]$PSprefix = "https://" 
+} 
+
+# ===================================================
+# Build the PowerShell URL and set the internal Value
+# ===================================================
+Write-host "Setting Powershell Virtual Directories" -foregroundcolor Yellow 
+write-host "" 
+
+$PShURL = $PSprefix + $base + $PShExtend 
+
+if ($isglobal -eq "Y")
+{
+  [array]$PShCurrent = Get-PowerShellVirtualDirectory
+
+  foreach ($value in $PShCurrent) { 
+    Write-host "Looking at Server: " $value.server 
+    Write-host "Current Internal Value: " $value.internalURL 
+    Write-host "New Internal Value:     " $PShUrl 
+    [string]$set = Read-host $ConfirmPrompt 
+    write-host "" 
+
+    if ($set -eq "Y")
+    { 
+        Set-PowerShellVirtualDirectory -id $value.identity -InternalURL $PShURL 
+    }
+    else
+    { 
+        write-host "PowerShell Virtual Directory internal value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+    } 
+
+    Write-host "Looking at Server: " $value.server 
+    Write-host "Current External Value: " $value.externalURL 
+    Write-host "New External Value:     " $PShUrl 
+    [string]$set = Read-host $ConfirmPrompt 
+    write-host "" 
+
+    if ($set -eq "Y")
+    { 
+        Set-PowerShellVirtualDirectory -id $value.identity -ExternalURL $PShURL 
+    }
+    else
+    { 
+        write-host "PowerShell Virtual Directory external value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+    } 
+  }
+}
+else
+{
+	$value = Get-PowerShellVirtualDirectory -server $localserver
+
+    Write-host "Current Internal Value: " $value.internalURL 
+    Write-host "New Internal Value:     " $PShUrl 
+    [string]$set = Read-host $ConfirmPrompt 
+    write-host "" 
+
+    if ($set -eq "Y")
+    { 
+        Set-PowerShellVirtualDirectory -id $value.identity -InternalURL $PShURL 
+    }
+    else
+    { 
+        write-host "PowerShell Virtual Directory internal value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+    } 
+
+    Write-host "Current External Value: " $value.externalURL 
+    Write-host "New External Value:     " $PShUrl 
+    [string]$set = Read-host $ConfirmPrompt 
+    write-host "" 
+
+    if ($set -eq "Y") { 
+        Set-PowerShellVirtualDirectory -id $value.identity -ExternalURL $PShURL 
+    }
+    else
+    { 
+        write-host "PowerShell Virtual Directory external value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+    } 
+}
+
 # =================================================================== 
 # Validate if OAB downloads are delivered with HTTP or HTTPS protocol
 # ===================================================================  
-[string]$set = Read-host "Do you want to use HTTP for OAB? (Y/N)" 
+[string]$set = Read-host "Do you want to use HTTPS for OAB? (Y/N)" 
 Write-host "" 
 
-if ($set -eq "Y")    { 
+if ($set -eq "N")    { 
     [string]$OABprefix = "http://" 
     [boolean]$OABRequireSSL = $false 
 }    else    { 
     [string]$OABprefix = "https://" 
     [boolean]$OABRequireSSL = $true 
 } 
-
 
 # ================================================================================ 
 # Validate if an operation is delivered to all CAS servers or only to local server 
@@ -223,97 +315,6 @@ else
     else
     { 
         write-host "Exchange Web Services Virtual Directory external value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-    } 
-}
-
-# =================================================================================
-# Validate if powershell virtual directory is published with HTTP or HTTPS protocol
-# ================================================================================= 
-[string]$set = Read-host "Do you want to use HTTP for Powershell? (Y/N)" 
-Write-host "" 
-
-if ($set -eq "Y")
-{ 
-    [string]$PSprefix = "http://" 
-}
-else
-{ 
-    [string]$PSprefix = "https://" 
-} 
-
-# ===================================================
-# Build the PowerShell URL and set the internal Value
-# ===================================================
-Write-host "Setting Powershell Virtual Directories" -foregroundcolor Yellow 
-write-host "" 
-
-$PShURL = $PSprefix + $base + $PShExtend 
-
-if ($isglobal -eq "Y")
-{
-  [array]$PShCurrent = Get-PowerShellVirtualDirectory
-
-  foreach ($value in $PShCurrent) { 
-    Write-host "Looking at Server: " $value.server 
-    Write-host "Current Internal Value: " $value.internalURL 
-    Write-host "New Internal Value:     " $PShUrl 
-    [string]$set = Read-host $ConfirmPrompt 
-    write-host "" 
-
-    if ($set -eq "Y")
-    { 
-        Set-PowerShellVirtualDirectory -id $value.identity -InternalURL $PShURL 
-    }
-    else
-    { 
-        write-host "PowerShell Virtual Directory internal value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-    } 
-
-    Write-host "Looking at Server: " $value.server 
-    Write-host "Current External Value: " $value.externalURL 
-    Write-host "New External Value:     " $PShUrl 
-    [string]$set = Read-host $ConfirmPrompt 
-    write-host "" 
-
-    if ($set -eq "Y")
-    { 
-        Set-PowerShellVirtualDirectory -id $value.identity -ExternalURL $PShURL 
-    }
-    else
-    { 
-        write-host "PowerShell Virtual Directory external value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-    } 
-  }
-}
-else
-{
-	$value = Get-PowerShellVirtualDirectory -server $localserver
-
-    Write-host "Current Internal Value: " $value.internalURL 
-    Write-host "New Internal Value:     " $PShUrl 
-    [string]$set = Read-host $ConfirmPrompt 
-    write-host "" 
-
-    if ($set -eq "Y")
-    { 
-        Set-PowerShellVirtualDirectory -id $value.identity -InternalURL $PShURL 
-    }
-    else
-    { 
-        write-host "PowerShell Virtual Directory internal value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-    } 
-
-    Write-host "Current External Value: " $value.externalURL 
-    Write-host "New External Value:     " $PShUrl 
-    [string]$set = Read-host $ConfirmPrompt 
-    write-host "" 
-
-    if ($set -eq "Y") { 
-        Set-PowerShellVirtualDirectory -id $value.identity -ExternalURL $PShURL 
-    }
-    else
-    { 
-        write-host "PowerShell Virtual Directory external value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
     } 
 }
 
@@ -550,161 +551,156 @@ else
 #
 # MAPI virtual directories - only for Exchange 2013 CU4 and later
 #
-# I also decided to set RPC virtual names only for Exchange 2013 from this script
-#
 if ($ExOrgCfg.AdminDisplayVersion.ExchangeBuild.Major -eq 15)
-	{
-	if ((($ExOrgCfg.RBACConfigurationVersion.ExchangeBuild.Build -ge 847) -and ($ExOrgCfg.RBACConfigurationVersion.ExchangeBuild.Minor -eq 0)) -or ($ExOrgCfg.RBACConfigurationVersion.ExchangeBuild.Minor -eq 1))
-	{
-		Write-host "Setting MAPI Virtual Directories" -foregroundcolor Yellow 
-		write-host "" 
+{
+    Write-host "Setting MAPI Virtual Directories" -foregroundcolor Yellow 
+    write-host "" 
 
-		$MAPIURL = "https://" + $base + $MapiExtend 
+    $MAPIURL = "https://" + $base + $MapiExtend 
 
-		if ($isglobal -eq "Y")
-		{
-            [array]$MAPICurrent = Get-MAPIVirtualDirectory 
-			foreach ($value in $MAPICurrent) { 
-			    Write-host "Looking at Server: " $value.server 
-    			Write-host "Current Internal Value: " $value.internalURL 
-    			Write-host "New Internal Value:     " $MAPIUrl 
-			    [string]$set = Read-host $ConfirmPrompt 
-    			write-host "" 
+    if ($isglobal -eq "Y")
+    {
+        [array]$MAPICurrent = Get-MAPIVirtualDirectory 
+        foreach ($value in $MAPICurrent)
+        { 
+            Write-host "Looking at Server: " $value.server 
+            Write-host "Current Internal Value: " $value.internalURL 
+            Write-host "New Internal Value:     " $MAPIUrl 
+            [string]$set = Read-host $ConfirmPrompt 
+            write-host "" 
 
-    			if ($set -eq "Y")
-                { 
-			        Set-MAPIVirtualDirectory -id $value.identity -InternalURL $MAPIURL -IISAuthenticationMethods @('Ntlm', 'Oauth', 'Negotiate')
-				}
-                else
-                { 
-			        write-host "MAPI Virtual Directory internal value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-    			} 
+            if ($set -eq "Y")
+            { 
+                Set-MAPIVirtualDirectory -id $value.identity -InternalURL $MAPIURL -IISAuthenticationMethods @('Ntlm', 'Oauth', 'Negotiate')
+            }
+            else
+            { 
+                write-host "MAPI Virtual Directory internal value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+            } 
 
-			    Write-host "Looking at Server: " $value.server 
-    			Write-host "Current External Value: " $value.externalURL 
-    			Write-host "New External Value:     " $MAPIUrl 
-    			[string]$set = Read-host $ConfirmPrompt 
-    			write-host "" 
+            Write-host "Looking at Server: " $value.server 
+            Write-host "Current External Value: " $value.externalURL 
+            Write-host "New External Value:     " $MAPIUrl 
+            [string]$set = Read-host $ConfirmPrompt 
+            write-host "" 
 
-    			if ($set -eq "Y")
-                { 
-        			Set-MAPIVirtualDirectory -id $value.identity -ExternalURL $MAPIURL -IISAuthenticationMethods @('Ntlm', 'Oauth', 'Negotiate')
-    			}
-                else
-                { 
-        			write-host "MAPI Virtual Directory external value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-				} 
-			}
-		}
-		else
-		{
-			$value = Get-MAPIVirtualDirectory -server $localserver
-	
-		    Write-host "Current Internal Value: " $value.internalURL 
-    		Write-host "New Internal Value:     " $MAPIUrl 
-    		[string]$set = Read-host $ConfirmPrompt 
-    		write-host "" 
-
-    		if ($set -eq "Y")
-			{ 
-		        Set-MAPIVirtualDirectory -id $value.identity -InternalURL $MAPIURL -IISAuthenticationMethods @('Ntlm', 'Oauth', 'Negotiate')
-		    }
-			else
-			{ 
-	        	write-host "MAPI Virtual Directory internal value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-    		} 
-
-    		Write-host "Current External Value: " $value.externalURL 
-    		Write-host "New External Value:     " $MAPIUrl 
-    		[string]$set = Read-host $ConfirmPrompt 
-    		write-host "" 
-
-    		if ($set -eq "Y")
-			{ 
-        		Set-MAPIVirtualDirectory -id $value.identity -ExternalURL $MAPIURL -IISAuthenticationMethods @('Ntlm', 'Oauth', 'Negotiate')
-    		}
-			else
-			{ 
-        		write-host "MAPI Virtual Directory external value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-    		} 
-		}
+            if ($set -eq "Y")
+            { 
+                Set-MAPIVirtualDirectory -id $value.identity -ExternalURL $MAPIURL -IISAuthenticationMethods @('Ntlm', 'Oauth', 'Negotiate')
+            }
+            else
+            { 
+                write-host "MAPI Virtual Directory external value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+            } 
+        }
 	}
+	else
+	{
+        $value = Get-MAPIVirtualDirectory -server $localserver
 
+        Write-host "Current Internal Value: " $value.internalURL 
+        Write-host "New Internal Value:     " $MAPIUrl 
+        [string]$set = Read-host $ConfirmPrompt 
+        write-host "" 
+
+        if ($set -eq "Y")
+        { 
+            Set-MAPIVirtualDirectory -id $value.identity -InternalURL $MAPIURL -IISAuthenticationMethods @('Ntlm', 'Oauth', 'Negotiate')
+        }
+        else
+        { 
+            write-host "MAPI Virtual Directory internal value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+        } 
+
+        Write-host "Current External Value: " $value.externalURL 
+        Write-host "New External Value:     " $MAPIUrl 
+        [string]$set = Read-host $ConfirmPrompt 
+        write-host "" 
+
+        if ($set -eq "Y")
+        { 
+            Set-MAPIVirtualDirectory -id $value.identity -ExternalURL $MAPIURL -IISAuthenticationMethods @('Ntlm', 'Oauth', 'Negotiate')
+        }
+        else
+        { 
+            write-host "MAPI Virtual Directory external value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+        } 
+    }
+}
 
 
 #
 #	Outlook Anywhere hostnames. Tested on Exchange 2013 and Exchange 2016
 #	
-	Write-host "Setting Outlook Anywhere hostnames" -foregroundcolor Yellow 
-	write-host "" 
+Write-host "Setting Outlook Anywhere hostnames" -foregroundcolor Yellow 
+write-host "" 
 
-	if ($isglobal -eq "Y")
-	{
-		[array]$OACurrent = Get-OutlookAnywhere 
-		foreach ($value in $OACurrent)
-		{ 
-			Write-host "Looking at Server: " $value.server 
-    			Write-host "Current Internal Value: " $value.InternalHostname 
-    			Write-host "New Internal Value:     " $base 
-			[string]$set = Read-host $ConfirmPrompt 
-    			write-host "" 
+if ($isglobal -eq "Y")
+{
+    [array]$OACurrent = Get-OutlookAnywhere 
+    foreach ($value in $OACurrent)
+    { 
+        Write-host "Looking at Server: " $value.server 
+            Write-host "Current Internal Value: " $value.InternalHostname 
+            Write-host "New Internal Value:     " $base 
+        [string]$set = Read-host $ConfirmPrompt 
+            write-host "" 
 
-    			if ($set -eq "Y")
-			{ 
-		        	Set-OutlookAnywhere -id $value.identity -InternalHostname $base -InternalClientsRequireSsl $true -InternalClientAuthenticationMethod Negotiate
-			}
-			else
-			{ 
-		        	write-host "Outlook Anywhere internal hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground
-    			}
+            if ($set -eq "Y")
+        { 
+                Set-OutlookAnywhere -id $value.identity -InternalHostname $base -InternalClientsRequireSsl $true -InternalClientAuthenticationMethod Negotiate
+        }
+        else
+        { 
+                write-host "Outlook Anywhere internal hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground
+            }
 
-			Write-host "Looking at Server: " $value.server 
-    			Write-host "Current External Value: " $value.externalhostname 
-    			Write-host "New External Value:     " $base 
-    			[string]$set = Read-host $ConfirmPrompt 
-	   		write-host "" 
+        Write-host "Looking at Server: " $value.server 
+            Write-host "Current External Value: " $value.externalhostname 
+            Write-host "New External Value:     " $base 
+            [string]$set = Read-host $ConfirmPrompt 
+        write-host "" 
 
-    			if ($set -eq "Y")
-			{ 
-       				Set-OutlookAnywhere -id $value.identity -ExternalHostname $base -ExternalClientsRequireSsl $true -ExternalClientAuthenticationMethod Negotiate  -IISAuthenticationMethods @('Ntlm', 'Basic', 'Negotiate')
-			}
-			else
-			{ 
-       				write-host "Outlook Anywhere external hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-		    	}
-		}
-	}
-	else
-	{
-		$value = Get-OutlookAnywhere -server $localserver
-		Write-host "Current Internal Value: " $value.internalhostname 
-    		Write-host "New Internal Value:     " $base
-	   	[string]$set = Read-host $ConfirmPrompt 
-    		write-host "" 
+            if ($set -eq "Y")
+        { 
+                Set-OutlookAnywhere -id $value.identity -ExternalHostname $base -ExternalClientsRequireSsl $true -ExternalClientAuthenticationMethod Negotiate  -IISAuthenticationMethods @('Ntlm', 'Basic', 'Negotiate')
+        }
+        else
+        { 
+                write-host "Outlook Anywhere external hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+            }
+    }
+}
+else
+{
+    $value = Get-OutlookAnywhere -server $localserver
+    Write-host "Current Internal Value: " $value.internalhostname 
+    Write-host "New Internal Value:     " $base
+    [string]$set = Read-host $ConfirmPrompt 
+    write-host "" 
 
-    		if ($set -eq "Y")
-		{ 
-	        	Set-OutlookAnywhere -identity $value.identity -InternalHostname $base -InternalClientsRequireSsl $true -InternalClientAuthenticationMethod Negotiate
-		}
-		else
-		{ 
-	    		write-host "Outlook Anywhere internal hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-    		} 
+    if ($set -eq "Y")
+    { 
+        Set-OutlookAnywhere -identity $value.identity -InternalHostname $base -InternalClientsRequireSsl $true -InternalClientAuthenticationMethod Negotiate
+    }
+    else
+    { 
+        write-host "Outlook Anywhere internal hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+    } 
 
-	    	Write-host "Current External Value: " $value.externalhostname 
-    		Write-host "New External Value:     " $base
-	    	[string]$set = Read-host $ConfirmPrompt 
-    		write-host "" 
+    Write-host "Current External Value: " $value.externalhostname 
+    Write-host "New External Value:     " $base
+    [string]$set = Read-host $ConfirmPrompt 
+    write-host "" 
 
-	    	if ($set -eq "Y")
-		{ 
-     			Set-OutlookAnywhere -identity $value.identity -ExternalHostname $base -ExternalClientsRequireSsl $true -ExternalClientAuthenticationMethod Negotiate -IISAuthenticationMethods @('Ntlm', 'Basic', 'Negotiate')
-    		}
-		else
-		{ 
-       			write-host "Outlook Anywhere external hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
-	    	} 
-	}
+    if ($set -eq "Y")
+    { 
+        Set-OutlookAnywhere -identity $value.identity -ExternalHostname $base -ExternalClientsRequireSsl $true -ExternalClientAuthenticationMethod Negotiate -IISAuthenticationMethods @('Ntlm', 'Basic', 'Negotiate')
+    }
+    else
+    { 
+        write-host "Outlook Anywhere external hostname value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+    } 
 }
 
 # =========================================================
@@ -716,7 +712,8 @@ if ($ExOrgCfg.AdminDisplayVersion.ExchangeBuild.Major -eq 15)
 [string]$SCPset = Read-host "Do you want to use the same FQDN for Autodiscover Internal URI attrubute (SCP) for all of your CAS servers? (Y/N)" 
 Write-host "" 
 
-if ($SCPset -eq "Y")    { 
+if ($SCPset -eq "Y")
+{ 
     Write-host "Setting Autodiscover Service Connection Point" -foregroundcolor Yellow 
     write-host "" 
 
@@ -731,26 +728,27 @@ if ($SCPset -eq "Y")    {
         [array]$SCPCurrent = Get-ClientAccessServer 
 	}
 	
-    Foreach ($value in $SCPCurrent) { 
+    Foreach ($value in $SCPCurrent) 
+    { 
         Write-host "Looking at Server: " $value.name 
         Write-host "Current SCP value: " $value.AutoDiscoverServiceInternalUri.absoluteuri 
         Write-host "New SCP Value:     " $SCPURL 
         [string]$set = Read-host $ConfirmPrompt 
         write-host "" 
         if ($set -eq "Y")
-	{ 
-		if (($ExOrgCfg.AdminDisplayVersion.ExchangeBuild.Major -eq 15)-and ($ExOrgCfg.AdminDisplayVersion.ExchangeBuild.Minor -eq 1))
-		{
-			Set-ClientAccessService -id $value.identity -AutoDiscoverServiceInternalUri $SCPURL 
-		}
-		else
-		{
-			Set-ClientAccessServer -id $value.identity -AutoDiscoverServiceInternalUri $SCPURL 
-		}
+	    { 
+		    if (($ExOrgCfg.AdminDisplayVersion.ExchangeBuild.Major -eq 15)-and ($ExOrgCfg.AdminDisplayVersion.ExchangeBuild.Minor -eq 1))
+		    {
+			    Set-ClientAccessService -id $value.identity -AutoDiscoverServiceInternalUri $SCPURL 
+		    }
+		    else
+		    {
+			    Set-ClientAccessServer -id $value.identity -AutoDiscoverServiceInternalUri $SCPURL 
+		    }
         }
-	else
-	{ 
-		write-host "Autodiscover Service Connection Point internal value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
+	    else
+	    { 
+		    write-host "Autodiscover Service Connection Point internal value NOT changed" -foregroundcolor $NoChangeForeground -backgroundcolor $NoChangeBackground 
         } 
     } 
 } 
